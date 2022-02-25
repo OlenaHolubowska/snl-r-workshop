@@ -1,0 +1,133 @@
+---
+title: "01-osm"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(tidyverse)
+library(osmdata)
+library(sf)
+library(tmap)
+
+tmap_mode('view')
+```
+## Load Data
+
+```{r}
+# query <- getbb("Leuven, Belgium") %>%
+#   opq() %>%
+#   add_osm_feature("highway") %>%
+#   osmdata_sf()
+# 
+# glimpse(query)
+# 
+# leuvenHighways <- query$osm_lines
+# 
+# glimpse((leuvenHighways))
+```
+
+##save 
+
+```{r}
+# saveRDS(leuvenHighways, 
+#         here::here('data/rawData/leuvenHighways.rds'))
+```
+
+```{r}
+leuvenHighways <- readRDS(here::here('data/rawData/leuvenHighways.rds'))
+```
+
+
+## wrnagle data 
+
+```{r}
+leuvenHighwayFilter <- leuvenHighways %>%
+  select(osm_id, geometry)
+  
+```
+## do a map
+
+```{r}
+leuvenHighwayFilter %>% 
+  tm_shape()+
+  tm_lines()
+```
+
+```{r}
+leuvenHighwayFilter <- leuvenHighways %>% 
+  select(osm_id, highway, geometry)
+
+```
+
+```{r}
+# query <- getbb("Leuven, Belgium") %>%
+#   opq() %>%
+#   add_osm_feature("name", 'Sint-Pieterskerk') %>%
+#   osmdata_sf()
+# 
+# glimpse(query)
+# 
+# mapCenter <- query$osm_polygons
+# 
+# glimpse((leuvenHighways))
+
+#saveRDS(mapCenter, 
+       # here::here('data/rawData/mapCenter.rds'))
+
+mapCenter <- readRDS(here::here('data/rawData/mapCenter.rds'))
+
+mapBuffer <- mapCenter %>% 
+  st_transform(3857) %>% 
+  summarise(geometry = st_union(geometry)) %>% 
+  st_centroid() %>% 
+  st_buffer(500) %>%
+  st_as_sf()
+
+glimpse(mapBuffer)
+
+tm_shape(mapBuffer)+
+  tm_borders(lwd =2, lty='dashed')+
+  tm_dots()+
+  tm_fill(col ='red')
+
+```
+##chose a roads 
+
+```{r}
+
+mapRoads <- leuvenHighwayFilter %>% 
+  st_transform(3857) %>% 
+  st_intersection(mapBuffer)
+
+  
+
+glimpse(mapRoads)
+
+tm_shape(mapRoads)+
+  tm_lines(col='highway')+
+  tm_shape(mapBuffer)+
+  tm_borders(lwd=3.5)
+
+
+```
+
+```{r}
+
+mapRoadsSP <- as(mapRoads, 'Spatial') %>% 
+  as.data.frame()
+
+glimpse(mapRoadsSP)
+
+
+```
+
+
+
+
+
+
